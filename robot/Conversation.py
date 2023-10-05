@@ -347,7 +347,7 @@ class Conversation(object):
             f"http://{config.get('/server/actual_host')}:{config.get('/server/port')}/audio/{os.path.basename(voice)}"
             for voice in audios
         ]
-        audios = self._merge_and_encode_audios(audios)
+
         if self.onSay:
             logger.info(f"onSay: {msg}, {cached_audios}")
             self.onSay(msg, audios, plugin=plugin)
@@ -420,6 +420,10 @@ class Conversation(object):
         self.tts_count = len(lines)
         logger.debug(f"tts_count: {self.tts_count}")
         audios = self._tts(lines, cache, onCompleted)
+        audios = self._merge_and_encode_audios(audios)
+        if self.onStream:
+            resp_uuid = str(uuid.uuid1())
+            self.onStream(msg, resp_uuid,audios)
         self._after_play(msg, audios, plugin)
 
     def activeListen(self, silent=False):

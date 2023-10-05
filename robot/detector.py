@@ -2,6 +2,8 @@ import time
 
 from snowboy import snowboydecoder
 from robot import config, logging, utils, constants
+from server import server
+
 
 logger = logging.getLogger(__name__)
 
@@ -9,8 +11,15 @@ detector = None
 recorder = None
 porcupine = None
 
+def onStream( data, uuid,audio=""):
+    # 通过 ChatWebSocketHandler 发送给前端
+    for client in server.clients:
+        client.send_response(data, uuid, "",audio)
 
+            
 def initDetector(wukong):
+    
+
     """
     初始化离线唤醒热词监听器，支持 snowboy 和 porcupine 两大引擎
     """
@@ -91,6 +100,7 @@ def initDetector(wukong):
             recorder and recorder.delete()
 
     else:
+        wukong.conversation.onStream = onStream
         logger.info("使用 snowboy 进行离线唤醒")
         detector and detector.terminate()
         models = constants.getHotwordModel(config.get("hotword", "wukong.pmdl"))
