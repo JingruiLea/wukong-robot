@@ -40,6 +40,15 @@ suggestions = [
 
 
 class BaseHandler(tornado.web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        # self.set_header('Access-Control-Allow-Headers', '*')
+        self.set_header('Access-Control-Max-Age', 1000)
+        #self.set_header('Content-type', 'application/json')
+        self.set_header('Access-Control-Allow-Methods', '*')
+        self.set_header('Access-Control-Allow-Headers','*')
+                        # 'authorization, Authorization, Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Headers, X-Requested-By, Access-Control-Allow-Methods')
+        
     def isValidated(self):
         if not self.get_secure_cookie("validation"):
             return False
@@ -160,7 +169,21 @@ class ChatHandler(BaseHandler):
     def post(self):
         global conversation
         if self.validate(self.get_argument("validate", default=None)):
-            if self.get_argument("type") == "text":
+            if self.get_argument("type") == "start":
+                query = self.get_argument("query")
+                uuid = self.get_argument("uuid")
+                conversation.interrupt()
+                query = conversation.activeListen()
+                conversation.doResponse(
+                    query,
+                    uuid,
+                    onSay=lambda msg, audio, plugin: self.onResp(
+                        msg, audio, plugin
+                    ),
+                    onStream=lambda data, resp_uuid: self.onStream(data, resp_uuid),
+                )
+
+            elif self.get_argument("type") == "text":
                 query = self.get_argument("query")
                 uuid = self.get_argument("uuid")
                 if query == "":
@@ -496,5 +519,6 @@ def start_server(con, wk):
 
 def run(conversation, wukong, debug=False):
     settings["debug"] = debug
-    t = threading.Thread(target=lambda: start_server(conversation, wukong))
-    t.start()
+    start_server(conversation, wukong)
+    # t = threading.Thread(target=lambda: start_server(conversation, wukong))
+    # t.start()
