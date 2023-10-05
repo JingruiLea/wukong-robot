@@ -261,7 +261,7 @@ class OPENAIRobot(AbstractRobot):
             self.openai = openai
             if not openai_api_key:
                 openai_api_key = os.getenv("OPENAI_API_KEY")
-            self.openai.api_key = "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"
+            self.openai.api_key = "sk-xxxxxxxxxxxxxxxxxxxxx"
             if proxy:
                 logger.info(f"{self.SLUG} 使用代理：{proxy}")
                 self.openai.proxy = proxy
