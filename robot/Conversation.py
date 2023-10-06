@@ -8,7 +8,7 @@ import re
 import os
 import threading
 import traceback
-
+import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from snowboy import snowboydecoder
@@ -164,13 +164,19 @@ class Conversation(object):
                 # 停止说话
                 self.player.stop()
             else:
+                SLUG = self.ai.SLUG
                 # 没命中技能，使用机器人回复
-                if self.ai.SLUG == "openai":
+                if SLUG == "openai":
                     stream = self.ai.stream_chat(query)
                     self.stream_say(stream, True, onCompleted=self.checkRestore)
-                else:
-                    msg = self.ai.chat(query, parsed)
+                elif SLUG=="xiaowei":
+                    msg,isTrue = self.ai.chat(query, parsed)
+                    if isTrue:
+                        #需增加对图片格式的支持
+                        msg = msg["msg_data"]["data"]
                     self.say(msg, True, onCompleted=self.checkRestore)
+                else:
+                    self.say("暂时还不支持该类型的语音哦", True, onCompleted=self.checkRestore)
         else:
             # 命中技能
             if lastImmersiveMode and lastImmersiveMode != self.matchPlugin:
@@ -295,6 +301,7 @@ class Conversation(object):
         return None
 
     def _tts(self, lines, cache, onCompleted=None):
+
         """
         对字符串进行 TTS 并返回合成后的音频
         :param lines: 字符串列表
@@ -324,16 +331,26 @@ class Conversation(object):
                     audio = future.result()
                     if audio:
                         audios.append(audio)
+
             return audios
+    def _merge_and_encode_audios(self,audios):
+        audio_data = b''
+        for audio in audios:
+            with open(audio, 'rb') as f:
+                audio_data += f.read()
+        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+        return audio_base64
 
     def _after_play(self, msg, audios, plugin=""):
+
         cached_audios = [
-            f"http://{config.get('/server/host')}:{config.get('/server/port')}/audio/{os.path.basename(voice)}"
+            f"http://{config.get('/server/actual_host')}:{config.get('/server/port')}/audio/{os.path.basename(voice)}"
             for voice in audios
         ]
+
         if self.onSay:
             logger.info(f"onSay: {msg}, {cached_audios}")
-            self.onSay(msg, cached_audios, plugin=plugin)
+            self.onSay(msg, audios, plugin=plugin)
             self.onSay = None
         utils.lruCache()  # 清理缓存
 
@@ -403,6 +420,10 @@ class Conversation(object):
         self.tts_count = len(lines)
         logger.debug(f"tts_count: {self.tts_count}")
         audios = self._tts(lines, cache, onCompleted)
+        audios = self._merge_and_encode_audios(audios)
+        if self.onStream:
+            resp_uuid = str(uuid.uuid1())
+            self.onStream(msg, resp_uuid,audios)
         self._after_play(msg, audios, plugin)
 
     def activeListen(self, silent=False):

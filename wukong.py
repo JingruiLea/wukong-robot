@@ -88,6 +88,12 @@ class Wukong(object):
         self.init()
         # capture SIGINT signal, e.g., Ctrl+C
         signal.signal(signal.SIGINT, self._signal_handler)
+        # try:
+        #     # 初始化离线唤醒
+        #     detector.initDetector(self)
+        # except AttributeError:
+        #     logger.error("初始化离线唤醒功能失败", stack_info=True)
+        #     pass
         # 后台管理端
         server.run(self.conversation, self, debug=self._debug)
         try:

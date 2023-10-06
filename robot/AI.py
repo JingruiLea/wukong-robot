@@ -173,6 +173,64 @@ class AnyQRobot(AbstractRobot):
             logger.critical("AnyQ robot failed to response for %r", msg, exc_info=True)
             return "抱歉, AnyQ回答失败"
 
+class XiaoweiRobot(AbstractRobot):
+
+    SLUG = "xiaowei"
+
+    def __init__(self,local_url,remote_url,room,talker,type=7,bot_id=2,mode="DEBUG"
+
+    ):
+        """
+        OpenAI机器人
+        """
+        super(self.__class__, self).__init__()
+        self.api_base = local_url if mode=="DEBUG" else remote_url
+        self.room = room if room else "smart_audio"
+        self.talker = talker if talker else "audio_user"
+        self.bot_id = bot_id
+
+
+    @classmethod
+    def get_config(cls):
+        # Try to get anyq config from config
+        return config.get("xiaowei", {})
+
+    def chat(self, texts, parsed):
+        """
+        使用小微机器人机器人聊天
+
+        Arguments:
+        texts -- user input, typically speech, to be parsed by a module
+        """
+        msg = "@小微5号 "+(texts)
+        msg = utils.stripPunctuation(msg)
+        logger.info("msg: " + msg)
+        try:
+            url = self.api_base
+            import time
+            current_timestamp = int(time.time())
+            body = {
+                "content": msg,
+                "room": self.room,
+                "talker": self.talker,
+                "bot_id":self.bot_id,
+                "ts": current_timestamp,
+                "type": 7,
+            }
+            r = requests.post(url, json=body)
+            respond = json.loads(r.text)
+            if respond["code"]==0:
+                result = respond["data"],True
+            else:
+                result = "小微机器人服务异常",False          
+           
+            logger.info(f"{self.SLUG} 的返回结果是：{result}")
+            return result
+        except Exception:
+            logger.critical(
+                "Xiaowei robot failed to response for %r", msg, exc_info=True
+            )
+
 
 class OPENAIRobot(AbstractRobot):
 
@@ -203,7 +261,7 @@ class OPENAIRobot(AbstractRobot):
             self.openai = openai
             if not openai_api_key:
                 openai_api_key = os.getenv("OPENAI_API_KEY")
-            self.openai.api_key = openai_api_key
+            self.openai.api_key = "sk-xxxxxxxxxxxxxxxxxxxxx"
             if proxy:
                 logger.info(f"{self.SLUG} 使用代理：{proxy}")
                 self.openai.proxy = proxy

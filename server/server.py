@@ -40,6 +40,15 @@ suggestions = [
 
 
 class BaseHandler(tornado.web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        # self.set_header('Access-Control-Allow-Headers', '*')
+        self.set_header('Access-Control-Max-Age', 1000)
+        #self.set_header('Content-type', 'application/json')
+        self.set_header('Access-Control-Allow-Methods', '*')
+        self.set_header('Access-Control-Allow-Headers','*')
+                        # 'authorization, Authorization, Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Headers, X-Requested-By, Access-Control-Allow-Methods')
+        
     def isValidated(self):
         if not self.get_secure_cookie("validation"):
             return False
@@ -115,23 +124,39 @@ class MessageUpdatesHandler(BaseHandler):
 负责跟前端通信，把机器人的响应内容传输给前端
 """
 
+clients = set()
 
 class ChatWebSocketHandler(WebSocketHandler, BaseHandler):
-    clients = set()
+    def set_default_headers(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        # self.set_header('Access-Control-Allow-Headers', '*')
+        self.set_header('Access-Control-Max-Age', 1000)
+        #self.set_header('Content-type', 'application/json')
+        self.set_header('Access-Control-Allow-Methods', '*')
+        self.set_header('Access-Control-Allow-Headers','*')
+                        # 'authorization, Authorization, Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Headers, X-Requested-By, Access-Control-Allow-Methods')
+
+    def check_origin(self, origin: str) -> bool:
+        return True
 
     def open(self):
-        self.clients.add(self)
+        clients.add(self)
+        print(len(clients))
 
     def on_close(self):
-        self.clients.remove(self)
+        clients.remove(self)
 
-    def send_response(self, msg, uuid, plugin=""):
+    def on_message(self, message):
+        print(message) 
+
+    def send_response(self, msg, uuid, plugin="",audio=""):
         response = {
             "action": "new_message",
             "type": 1,
             "text": msg,
             "uuid": uuid,
             "plugin": plugin,
+            "audio":audio
         }
         self.write_message(json.dumps(response))
 
@@ -152,15 +177,29 @@ class ChatHandler(BaseHandler):
         except:
             pass
 
-    def onStream(self, data, uuid):
+    def onStream(self, data, uuid,audio=""):
         # 通过 ChatWebSocketHandler 发送给前端
-        for client in ChatWebSocketHandler.clients:
-            client.send_response(data, uuid, "")
+        for client in clients:
+            client.send_response(data, uuid, "",audio)
 
     def post(self):
         global conversation
         if self.validate(self.get_argument("validate", default=None)):
-            if self.get_argument("type") == "text":
+            if self.get_argument("type") == "start":
+                query = self.get_argument("query")
+                uuid = self.get_argument("uuid")
+                conversation.interrupt()
+                query = conversation.activeListen()
+                conversation.doResponse(
+                    query,
+                    uuid,
+                    onSay=lambda msg, audio, plugin: self.onResp(
+                        msg, audio, plugin
+                    ),
+                    onStream=lambda data, resp_uuid,audio: self.onStream(data, resp_uuid,audio),
+                )
+
+            elif self.get_argument("type") == "text":
                 query = self.get_argument("query")
                 uuid = self.get_argument("uuid")
                 if query == "":
@@ -173,7 +212,7 @@ class ChatHandler(BaseHandler):
                         onSay=lambda msg, audio, plugin: self.onResp(
                             msg, audio, plugin
                         ),
-                        onStream=lambda data, resp_uuid: self.onStream(data, resp_uuid),
+                    onStream=lambda data, resp_uuid,audio: self.onStream(data, resp_uuid,audio),
                     )
 
             elif self.get_argument("type") == "voice":
@@ -188,8 +227,8 @@ class ChatHandler(BaseHandler):
                 conversation.doConverse(
                     nfile,
                     onSay=lambda msg, audio, plugin: self.on_resp(msg, audio, plugin),
-                    onStream=lambda data, resp_uuid: self.onStream(
-                        data, resp_uuid)
+                       onStream=lambda data, resp_uuid,audio: self.onStream(data, resp_uuid,audio),
+
 
                 )
             else:
@@ -496,5 +535,6 @@ def start_server(con, wk):
 
 def run(conversation, wukong, debug=False):
     settings["debug"] = debug
+    # start_server(conversation, wukong)
     t = threading.Thread(target=lambda: start_server(conversation, wukong))
     t.start()
