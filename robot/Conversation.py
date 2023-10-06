@@ -349,7 +349,7 @@ class Conversation(object):
         # ]
 
         if self.onSay:
-            logger.info(f"onSay:", msg)
+            logger.info("onSay:", msg)
             self.onSay(msg, audios, plugin=plugin)
             self.onSay = None
         utils.lruCache()  # 清理缓存
