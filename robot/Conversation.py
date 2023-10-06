@@ -172,8 +172,13 @@ class Conversation(object):
                 elif SLUG=="xiaowei":
                     msg,isTrue = self.ai.chat(query, parsed)
                     if isTrue:
-                        #需增加对图片格式的支持
-                        msg = msg["msg_data"]["data"]
+                        if msg["msg_type"] == "txt":
+                            msg = msg["msg_data"]["data"]
+                        else:
+                            #需增加对图片格式的支持
+                            msg = "小微暂时不支持该功能哦"
+                    else:
+                        msg="抱歉，小微感觉有点不舒服，一会儿再回答您"
                     self.say(msg, True, onCompleted=self.checkRestore)
                 else:
                     self.say("暂时还不支持该类型的语音哦", True, onCompleted=self.checkRestore)
@@ -349,7 +354,7 @@ class Conversation(object):
         # ]
 
         if self.onSay:
-            logger.info("onSay:", msg)
+            logger.info(f"onSay:{msg}")
             self.onSay(msg, audios, plugin=plugin)
             self.onSay = None
         utils.lruCache()  # 清理缓存
