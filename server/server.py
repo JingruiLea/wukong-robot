@@ -141,7 +141,8 @@ class ChatWebSocketHandler(WebSocketHandler, BaseHandler):
 
     def open(self):
         clients.add(self)
-        print(len(clients))
+        print("client enter",self.request.remote_ip)
+        print("clients lenght",len(clients))
 
     def on_close(self):
         clients.remove(self)

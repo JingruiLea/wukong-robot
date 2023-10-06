@@ -97,6 +97,7 @@ function guid() {
 
 // 创建WebSocket连接
 var socket = new WebSocket("ws://" + location.host + "/websocket");
+console.log(location.host)
 
 // 监听WebSocket打开事件
 socket.onopen = function (e) {

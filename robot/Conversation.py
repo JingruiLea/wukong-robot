@@ -343,13 +343,13 @@ class Conversation(object):
 
     def _after_play(self, msg, audios, plugin=""):
 
-        cached_audios = [
-            f"http://{config.get('/server/actual_host')}:{config.get('/server/port')}/audio/{os.path.basename(voice)}"
-            for voice in audios
-        ]
+        # cached_audios = [
+        #     f"http://{config.get('/server/actual_host')}:{config.get('/server/port')}/audio/{os.path.basename(voice)}"
+        #     for voice in audios
+        # ]
 
         if self.onSay:
-            logger.info(f"onSay: {msg}, {cached_audios}")
+            logger.info(f"onSay:", msg)
             self.onSay(msg, audios, plugin=plugin)
             self.onSay = None
         utils.lruCache()  # 清理缓存

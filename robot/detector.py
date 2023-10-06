@@ -14,6 +14,7 @@ porcupine = None
 def onStream( data, uuid,audio=""):
     # 通过 ChatWebSocketHandler 发送给前端
     for client in server.clients:
+        print("clinet_sent_info:,",data)
         client.send_response(data, uuid, "",audio)
 
             
