@@ -150,7 +150,7 @@ class ChatWebSocketHandler(WebSocketHandler, BaseHandler):
     def on_message(self, message):
         print(message) 
 
-    def send_response(self, msg, uuid, plugin="",audio=""):
+    def send_response(self, msg, uuid, plugin="",audio=[]):
         response = {
             "action": "new_message",
             "type": 1,
