@@ -179,6 +179,8 @@ class Conversation(object):
                             msg = "小微暂时不支持该功能哦"
                     else:
                         msg="抱歉，小微感觉有点不舒服，一会儿再回答您"
+                    # msg="你真厉害呀，"
+                    # msg="对不起，我没能理解你的问题。你能详细说明一下吗。你真的好厉害啊。我想和你一起玩。"
                     self.say(msg, True, onCompleted=self.checkRestore)
                 else:
                     self.say("暂时还不支持该类型的语音哦", True, onCompleted=self.checkRestore)
@@ -339,12 +341,15 @@ class Conversation(object):
 
             return audios
     def _merge_and_encode_audios(self,audios):
-        audio_data = b''
+        audio_data = []
         for audio in audios:
             with open(audio, 'rb') as f:
-                audio_data += f.read()
-        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-        return audio_base64
+                item = f.read()
+                audio_base64 = base64.b64encode(item).decode('utf-8')
+                audio_data.append(audio_base64)
+
+        # audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+        return audio_data
 
     def _after_play(self, msg, audios, plugin=""):
 
@@ -425,7 +430,7 @@ class Conversation(object):
         self.tts_count = len(lines)
         logger.debug(f"tts_count: {self.tts_count}")
         audios = self._tts(lines, cache, onCompleted)
-        audios = self._merge_and_encode_audios(audios)
+        audios = self._merge_and_encode_audios(audios) #base64 array
         if self.onStream:
             resp_uuid = str(uuid.uuid1())
             self.onStream(msg, resp_uuid,audios)
